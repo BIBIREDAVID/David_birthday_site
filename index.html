@@ -213,7 +213,7 @@
       background: linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent);
     }
 
-    /* ── PHOTO MOSAIC ── */
+    /* ── VIDEO MOSAIC ── */
     .mosaic {
       display: grid;
       grid-template-columns: 2fr 1fr 1fr;
@@ -225,57 +225,94 @@
       border-radius: 10px;
       overflow: hidden;
       position: relative;
-      cursor: default;
+      cursor: pointer;
+      border: 1px solid rgba(139,26,26,0.2);
+      transition: border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .mosaic-item:hover {
+      border-color: var(--crimson);
+      box-shadow: 0 0 28px rgba(192,57,43,0.2);
     }
 
     .mosaic-item.tall { grid-row: span 2; }
 
-    .mosaic-item img {
+    /* actual video fills cell */
+    .mosaic-item video {
       width: 100%; height: 100%;
       object-fit: cover;
       display: block;
-      filter: grayscale(30%) brightness(0.85);
-      transition: filter 0.6s ease, transform 0.6s ease;
+      filter: brightness(0.82) saturate(0.85);
+      transition: filter 0.5s ease;
     }
 
-    .mosaic-item:hover img {
-      filter: grayscale(0%) brightness(1);
-      transform: scale(1.03);
+    .mosaic-item:hover video {
+      filter: brightness(1) saturate(1);
     }
 
-    /* placeholder when no img */
-    .photo-ph {
+    /* placeholder when no video yet */
+    .vid-ph {
       width: 100%; height: 100%;
       background: linear-gradient(135deg, #120606, #1c0a0a);
-      border: 1px dashed rgba(139,26,26,0.35);
+      border: 1px dashed rgba(139,26,26,0.3);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 0.6rem;
-      color: rgba(139,26,26,0.5);
-      font-size: 0.72rem;
+      color: rgba(139,26,26,0.48);
+      font-size: 0.7rem;
       letter-spacing: 0.12em;
       position: absolute;
       inset: 0;
-      transition: border-color 0.3s;
+      transition: border-color 0.3s, color 0.3s;
     }
 
-    .mosaic-item:hover .photo-ph {
+    .mosaic-item:hover .vid-ph {
       border-color: var(--crimson);
       color: rgba(192,57,43,0.7);
     }
+
+    /* play overlay — shown on hover over real video */
+    .mosaic-play-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10,0,0,0.32);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 2;
+    }
+
+    .mosaic-item:hover .mosaic-play-overlay { opacity: 1; }
+
+    .mosaic-play-btn {
+      width: 44px; height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(255,255,255,0.7);
+      background: rgba(192,57,43,0.25);
+      display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(4px);
+      transition: transform 0.25s, background 0.25s;
+    }
+
+    .mosaic-item:hover .mosaic-play-btn { transform: scale(1.1); background: rgba(192,57,43,0.45); }
 
     .mosaic-caption {
       position: absolute;
       bottom: 0; left: 0; right: 0;
       padding: 0.9rem 1rem 0.7rem;
-      background: linear-gradient(to top, rgba(10,0,0,0.85), transparent);
-      font-size: 0.72rem;
+      background: linear-gradient(to top, rgba(10,0,0,0.88), transparent);
+      font-size: 0.7rem;
       letter-spacing: 0.1em;
       color: var(--mist);
       opacity: 0;
       transition: opacity 0.35s;
+      z-index: 3;
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
     }
 
     .mosaic-item:hover .mosaic-caption { opacity: 1; }
@@ -583,7 +620,14 @@
   </style>
 </head>
 <body>
-
+<button id="reel-sound-btn" style="
+  position: fixed; top: 1.2rem; right: 1.4rem; z-index: 100;
+  background: var(--glass-bg); border: 1px solid var(--glass-b);
+  color: var(--dust); font-family: 'Inter', sans-serif;
+  font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 0.5rem 1rem; border-radius: 999px; cursor: pointer;
+  backdrop-filter: blur(12px); transition: border-color 0.3s;
+">🔇 Sound off</button>
 <!-- ── OPENING CURTAIN ── -->
 <div id="curtain" aria-hidden="true">
   <p class="curtain-text">Some distances are only ever physical.</p>
@@ -626,7 +670,7 @@
         said it the day you left: <em>it mattered. You matter.</em>
         The distance doesn't change that.
       </p>
-      <p class="words-sig">— Your name here</p>
+      <p class="words-sig">— David ❤️</p>
     </div>
   </section>
 </div>
@@ -640,7 +684,7 @@
   <p class="pull-quote-attr">A. A. Milne</p>
 </div>
 
-<!-- ══════════ PHOTOS ══════════ -->
+<!-- ══════════ VIDEO MOSAIC ══════════ -->
 <div class="wrap">
   <section class="seg reveal">
     <p class="seg-label">Times we had</p>
@@ -648,71 +692,100 @@
     <div class="seg-rule"></div>
 
     <div class="mosaic">
-      <!-- Tall left — hero photo -->
-      <div class="mosaic-item tall glass">
-        <!-- swap this for: <img src="your-photo.jpg" alt="..."/> -->
-        <div class="photo-ph">
+
+      <!--
+        HOW TO ADD VIDEOS:
+        Replace each <div class="vid-ph">...</div> with:
+          <video src="your-clip.mp4" muted loop playsinline></video>
+        The video will autoplay on hover via JS below.
+        Keep the .mosaic-play-overlay and .mosaic-caption divs in place.
+      -->
+
+      <!-- TALL LEFT — your longest/best clip -->
+      <div class="mosaic-item tall glass" data-label="The one I keep coming back to">
+        <div class="vid-ph">
           <svg width="32" height="32" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="3"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="m21 15-5-5L5 21"/>
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M2 10h20M2 14h20M7 6V3M17 6V3M7 21v-3M17 21v-3"/>
           </svg>
-          <span>Your best photo together</span>
+          <span>Your best clip together</span>
+        </div>
+        <div class="mosaic-play-overlay">
+          <div class="mosaic-play-btn">
+            <svg width="16" height="16" fill="white" viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>
+          </div>
         </div>
         <div class="mosaic-caption">The one I keep coming back to</div>
       </div>
 
-      <!-- Top right -->
-      <div class="mosaic-item glass">
-        <div class="photo-ph">
+      <!-- TOP RIGHT -->
+      <div class="mosaic-item glass" data-label="That day we laughed too hard">
+        <div class="vid-ph">
           <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="3"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="m21 15-5-5L5 21"/>
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M2 10h20M2 14h20M7 6V3M17 6V3M7 21v-3M17 21v-3"/>
           </svg>
-          <span>Add a photo</span>
+          <span>Add a clip</span>
+        </div>
+        <div class="mosaic-play-overlay">
+          <div class="mosaic-play-btn">
+            <svg width="14" height="14" fill="white" viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>
+          </div>
         </div>
         <div class="mosaic-caption">That day we laughed too hard</div>
       </div>
 
-      <!-- Mid right -->
-      <div class="mosaic-item glass">
-        <div class="photo-ph">
+      <!-- MID RIGHT -->
+      <div class="mosaic-item glass" data-label="Somewhere we used to go">
+        <div class="vid-ph">
           <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="3"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="m21 15-5-5L5 21"/>
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M2 10h20M2 14h20M7 6V3M17 6V3M7 21v-3M17 21v-3"/>
           </svg>
-          <span>Add a photo</span>
+          <span>Add a clip</span>
+        </div>
+        <div class="mosaic-play-overlay">
+          <div class="mosaic-play-btn">
+            <svg width="14" height="14" fill="white" viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>
+          </div>
         </div>
         <div class="mosaic-caption">Somewhere we used to go</div>
       </div>
 
-      <!-- Bottom mid -->
-      <div class="mosaic-item glass">
-        <div class="photo-ph">
+      <!-- BOTTOM MID -->
+      <div class="mosaic-item glass" data-label="A quiet one">
+        <div class="vid-ph">
           <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="3"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="m21 15-5-5L5 21"/>
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M2 10h20M2 14h20M7 6V3M17 6V3M7 21v-3M17 21v-3"/>
           </svg>
-          <span>Add a photo</span>
+          <span>Add a clip</span>
+        </div>
+        <div class="mosaic-play-overlay">
+          <div class="mosaic-play-btn">
+            <svg width="14" height="14" fill="white" viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>
+          </div>
         </div>
         <div class="mosaic-caption">A quiet one</div>
       </div>
 
-      <!-- Bottom right -->
-      <div class="mosaic-item glass">
-        <div class="photo-ph">
+      <!-- BOTTOM RIGHT -->
+      <div class="mosaic-item glass" data-label="Just us, as usual">
+        <div class="vid-ph">
           <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="18" height="18" rx="3"/>
-            <circle cx="8.5" cy="8.5" r="1.5"/>
-            <path d="m21 15-5-5L5 21"/>
+            <rect x="2" y="6" width="20" height="12" rx="2"/>
+            <path d="M2 10h20M2 14h20M7 6V3M17 6V3M7 21v-3M17 21v-3"/>
           </svg>
-          <span>Add a photo</span>
+          <span>Add a clip</span>
+        </div>
+        <div class="mosaic-play-overlay">
+          <div class="mosaic-play-btn">
+            <svg width="14" height="14" fill="white" viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>
+          </div>
         </div>
         <div class="mosaic-caption">Just us, as usual</div>
       </div>
+
     </div>
   </section>
 </div>
@@ -739,7 +812,7 @@
             <polygon points="8,5 20,12 8,19"/>
           </svg>
         </div>
-        <p class="video-ph-label">Drop your main video here</p>
+        <p class="video-ph-label"><video src="./videos/main video.mp4" controls> </video> </p>
       </div>
     </div>
   </section>
@@ -758,8 +831,7 @@
   <div class="reel" id="reel"></div>
 </div>
 <p style="position:relative;z-index:1;text-align:center;font-size:0.68rem;color:var(--mist);letter-spacing:0.15em;padding:1rem 0 4rem;">
-  Hover to pause &nbsp;·&nbsp; Replace placeholders with your clips
-</p>
+  Hover to pause &nbsp;·&nbsp; Click to play &nbsp;·&nbsp; Drag to scroll
 
 <!-- ══════════ CLOSING ══════════ -->
 <div class="closing reveal">
@@ -820,36 +892,70 @@
 
 /* ── REEL BUILD ── */
 (function () {
-  const labels = [
-    'Our usual spot','That road trip','Late night talks','The park',
-    'Your terrible cooking','That song we overplayed','Sunday afternoon',
-    'The day it rained','Random Tuesday','When we got lost','Last day together',
-    'Just existing'
+  const videos = [
+    { src: './videos/first day.mp4',                        label: 'First day' },
+    { src: './videos/goofy side.mp4',                       label: 'Goofy side' },
+    { src: './videos/last day in lasu together.mp4',        label: 'Last day in LASU together' },
+    { src: './videos/first time cooking.mp4.mp4',           label: 'First time cooking' },
+    { src: './videos/emotional support.mp4.mp4',            label: 'Emotional support' },
+    { src: './videos/first video call in caleb.mp4.mp4',    label: 'First video call in Caleb' },
+    { src: './videos/jealous moments.mp4',                  label: 'Jealous moments' },
+    { src: './videos/defense support.mp4',                  label: 'Defense support' },
+    { src: './videos/playful.mp4',                          label: 'Playful' },
+    { src: './videos/favourite spot.mp4',                   label: 'Favourite spot' },
   ];
 
   const reel = document.getElementById('reel');
 
-  function makeCell (label) {
+let reelMuted = true;
+document.getElementById('reel-sound-btn').addEventListener('click', () => {
+  reelMuted = !reelMuted;
+  document.querySelectorAll('#reel video').forEach(v => v.muted = reelMuted);
+  document.getElementById('reel-sound-btn').textContent = reelMuted ? '🔇 Sound off' : '🔊 Sound on';
+});
+
+  function makeCell({ src, label }) {
     const d = document.createElement('div');
     d.className = 'reel-cell';
     d.innerHTML = `
-      <div class="reel-ph">
-        <svg width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
-          <rect x="2" y="6" width="20" height="12" rx="2"/>
-          <path d="M2 10h20M2 14h20M7 6V3M17 6V3M7 21v-3M17 21v-3"/>
-        </svg>
-        <span>${label}</span>
-      </div>
+      <video src="${src}" muted loop playsinline
+             style="width:100%;height:100%;object-fit:cover;display:block;"></video>
       <div class="reel-cell-overlay">
         <div class="play-dot">
-          <svg width="14" height="14" fill="white" viewBox="0 0 24 24"><polygon points="8,5 20,12 8,19"/></svg>
+          <svg width="14" height="14" fill="white" viewBox="0 0 24 24">
+            <polygon points="8,5 20,12 8,19"/>
+          </svg>
         </div>
+      </div>
+      <div class="mosaic-caption" style="opacity:0;transition:opacity 0.35s;
+           position:absolute;bottom:0;left:0;right:0;padding:0.6rem 0.8rem;
+           background:linear-gradient(to top,rgba(10,0,0,0.88),transparent);
+           font-family:'Cormorant Garamond',serif;font-style:italic;
+           font-size:0.68rem;letter-spacing:0.08em;color:var(--mist);z-index:3;">
+        ${label}
       </div>`;
+
+    const vid = d.querySelector('video');
+    const cap = d.querySelector('.mosaic-caption');
+
+    d.addEventListener('mouseenter', () => { vid.muted = reelMuted; vid.play(); cap.style.opacity = '1'; });
+    d.addEventListener('mouseleave', () => { vid.pause(); vid.currentTime = 0; cap.style.opacity = '0'; });
+
     return d;
   }
 
   // Double for seamless loop
-  [...labels, ...labels].forEach(l => reel.appendChild(makeCell(l)));
+  [...videos, ...videos].forEach(v => reel.appendChild(makeCell(v)));
+})();
+
+/* ── MOSAIC VIDEO: hover to play / pause ── */
+(function () {
+  document.querySelectorAll('.mosaic-item').forEach(cell => {
+    const vid = cell.querySelector('video');
+    if (!vid) return;
+    cell.addEventListener('mouseenter', () => vid.play());
+    cell.addEventListener('mouseleave', () => { vid.pause(); vid.currentTime = 0; });
+  });
 })();
 
 /* ── SCROLL REVEAL ── */
