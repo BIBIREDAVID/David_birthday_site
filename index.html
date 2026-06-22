@@ -541,16 +541,6 @@
 </head>
 <body>
 
-<!-- SOUND TOGGLE -->
-<button id="reel-sound-btn" style="
-  position: fixed; top: 1.2rem; right: 1.4rem; z-index: 100;
-  background: var(--glass-bg); border: 1px solid var(--glass-b);
-  color: var(--dust); font-family: 'Inter', sans-serif;
-  font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase;
-  padding: 0.5rem 1rem; border-radius: 999px; cursor: pointer;
-  backdrop-filter: blur(12px); transition: border-color 0.3s;
-">🔇 Sound off</button>
-
 <!-- ── OPENING CURTAIN ── -->
 <div id="curtain" aria-hidden="true">
   <p class="curtain-text">Some distances are only ever physical.</p>
@@ -559,6 +549,7 @@
 
 <!-- ── AMBIENT CANVAS ── -->
 <canvas id="bg"></canvas>
+<audio id="bg-music" src="./audio/Download (5).mp3" loop autoplay></audio>
 
 <!-- ══════════ HERO ══════════ -->
 <section class="hero">
@@ -777,11 +768,14 @@
 
   const reel = document.getElementById('reel');
 
-  let reelMuted = true;
-  document.getElementById('reel-sound-btn').addEventListener('click', () => {
-    reelMuted = !reelMuted;
-    document.querySelectorAll('#reel video').forEach(v => v.muted = reelMuted);
-    document.getElementById('reel-sound-btn').textContent = reelMuted ? '🔇 Sound off' : '🔊 Sound on';
+/* ── BACKGROUND MUSIC ── */
+  const music = document.getElementById('bg-music');
+  music.volume = 0.5;
+  music.play().catch(() => {
+    document.addEventListener('click', function tryPlay() {
+      music.play().catch(() => {});
+      document.removeEventListener('click', tryPlay);
+    });
   });
 
   function makeCell({ src, label }) {
@@ -809,7 +803,7 @@
     const vid = d.querySelector('video');
     const cap = d.querySelector('.reel-cap');
 
-    d.addEventListener('mouseenter', () => { vid.muted = reelMuted; vid.play(); cap.style.opacity = '1'; });
+    d.addEventListener('mouseenter', () => { vid.muted = true; vid.play(); cap.style.opacity = '1'; });
     d.addEventListener('mouseleave', () => { vid.pause(); vid.currentTime = 0; cap.style.opacity = '0'; });
 
     return d;
